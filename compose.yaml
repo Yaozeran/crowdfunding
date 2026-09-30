@@ -1,0 +1,48 @@
+name: crowdfunding
+
+services:
+  server:
+    build:
+      context: ./server
+    environment:
+      RPC_URL: ${RPC_URL:-http://host.docker.internal:8545}
+      CHAIN_ID: ${CHAIN_ID:-1337}
+      CONTRACT_ADDRESS: ${CONTRACT_ADDRESS:-}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+      DATABASE: /data/transactions.sqlite3
+    ports:
+      - "127.0.0.1:${API_PORT:-5001}:5001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - transactions:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5001/api/health', timeout=5)"]
+      interval: 15s
+      timeout: 6s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_CONTRACT_ADDRESS: ${CONTRACT_ADDRESS:-}
+        NEXT_PUBLIC_CHAIN_ID: ${CHAIN_ID:-1337}
+        NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL:-http://localhost:5001}
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 6s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  transactions:

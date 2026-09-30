@@ -1,0 +1,47 @@
+# Create with Render Dashboard -> New -> Blueprint.
+# Backend plan and persistent disk incur charges. Frontend uses the free plan.
+services:
+  - type: web
+    name: crowdfunding-api
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    healthCheckPath: /api/health
+    disk:
+      name: transactions
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: "5001"
+      - key: DATABASE
+        value: /data/transactions.sqlite3
+      - key: CHAIN_ID
+        value: "11155111"
+      - key: CONTRACT_ADDRESS
+        sync: false
+      - key: RPC_URL
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+
+  - type: web
+    name: crowdfunding-web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./web/Dockerfile
+    dockerContext: ./web
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: NEXT_PUBLIC_CHAIN_ID
+        value: "11155111"
+      - key: NEXT_PUBLIC_CONTRACT_ADDRESS
+        fromService:
+          type: web
+          name: crowdfunding-api
+          envVarKey: CONTRACT_ADDRESS
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

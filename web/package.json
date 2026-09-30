@@ -1,0 +1,35 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "node --import tsx --test tests/campaign.test.ts tests/wallet.test.ts && node --test tests/contract.test.mjs",
+    "contract:compile": "node scripts/compile.mjs",
+    "contract:deploy:local": "node scripts/deploy-local.mjs",
+    "chain": "ganache --server.host 127.0.0.1 --chain.chainId 1337 --wallet.deterministic"
+  },
+  "dependencies": {
+    "ethers": "^6.17.0",
+    "next": "16.3.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.7",
+    "ganache": "^7.9.2",
+    "solc": "^0.8.30",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}

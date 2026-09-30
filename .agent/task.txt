@@ -1,0 +1,10 @@
+---
+Task 1
+
+based on the doc, make a simple crowdfunding web app with following features
+1. next.js react web allow user to connect wallet, deposit to smart contract account, etc.
+2. python backend server that store the transaction data for later retrieval
+3. relevant tests
+as mentioned in the doc requirements, etc.
+
+fit the content in the server and web dir structure
