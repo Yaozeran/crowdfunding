@@ -12,5 +12,8 @@ export function compile() {
 if (process.argv[1]?.endsWith('/compile.mjs')) {
   mkdirSync(new URL('../../sol/artifacts/', import.meta.url), { recursive: true });
   writeFileSync(new URL('../../sol/artifacts/Crowdfund.json', import.meta.url), JSON.stringify(compile(), null, 2));
-  console.log('Compiled sol/artifacts/Crowdfund.json');
+  const serialized = JSON.stringify(compile(), null, 2);
+  writeFileSync(new URL('../src/lib/contract-artifact.json', import.meta.url), serialized);
+  writeFileSync(new URL('../../backend/src/contract-artifact.json', import.meta.url), serialized);
+  console.log('Compiled and synchronized campaign artifacts');
 }

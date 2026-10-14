@@ -27,7 +27,7 @@ test('positive contribution is recorded, zero and premature settlement are rejec
   await (await contract.connect(donor).contribute({ value: parseEther('0.25') })).wait();
   assert.equal(await contract.totalRaised(), parseEther('0.25'));
   assert.equal(await contract.contributions(await donor.getAddress()), parseEther('0.25'));
-  await assert.rejects(contract.connect(donor).refund());
+  await assert.rejects(async () => { await (await contract.connect(donor).refund()).wait(); });
   await assert.rejects(contract.withdraw());
 });
 test('successful campaign permits only beneficiary to withdraw once, after deadline', async t => {
@@ -36,12 +36,12 @@ test('successful campaign permits only beneficiary to withdraw once, after deadl
   await assert.rejects(contract.withdraw());
   await end();
   await assert.rejects(contract.connect(donor).withdraw());
-  await assert.rejects(contract.connect(donor).refund());
+  await assert.rejects(async () => { await (await contract.connect(donor).refund()).wait(); });
   await (await contract.withdraw({ gasLimit: 150000 })).wait();
   assert.equal(await contract.withdrawn(), true);
   assert.equal(BigInt(await rpc.request({ method: 'eth_getBalance', params: [await contract.getAddress(), 'latest'] })), 0n);
   await assert.rejects(contract.withdraw());
-  await assert.rejects(contract.connect(donor).contribute({ value: 1 }));
+  await assert.rejects(async () => { await (await contract.connect(donor).contribute({ value: 1 })).wait(); });
 });
 test('failed campaign refunds each donor only once and blocks beneficiary withdrawal', async t => {
   const { contract, donor, end, rpc } = await fixture(t);
@@ -54,4 +54,23 @@ test('failed campaign refunds each donor only once and blocks beneficiary withdr
   assert.equal(BigInt(await rpc.request({ method: 'eth_getBalance', params: [await contract.getAddress(), 'latest'] })), 0n);
   await assert.rejects(async () => { await (await contract.connect(donor).refund()).wait(); });
   await assert.rejects(contract.refund());
+});
+
+test('creator cancellation enables immediate refunds and prevents new funding or withdrawal', async t => {
+  const { contract, donor } = await fixture(t);
+  await (await contract.connect(donor).contribute({ value: parseEther('1') })).wait();
+  await assert.rejects(contract.connect(donor).cancel());
+  await (await contract.cancel()).wait();
+  assert.equal(await contract.cancelled(), true);
+  await assert.rejects(async () => { await (await contract.cancel()).wait(); });
+  await assert.rejects(async () => { await (await contract.connect(donor).contribute({ value: 1 })).wait(); });
+  await assert.rejects(contract.withdraw());
+  await (await contract.connect(donor).refund()).wait();
+  assert.equal(await contract.contributions(await donor.getAddress()), 0n);
+  await assert.rejects(async () => { await (await contract.connect(donor).refund()).wait(); });
+});
+test('expired campaigns cannot be cancelled', async t => {
+  const { contract, end } = await fixture(t);
+  await end();
+  await assert.rejects(async () => { await (await contract.cancel()).wait(); });
 });

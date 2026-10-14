@@ -8,6 +8,8 @@ contract Crowdfund {
     uint256 public immutable deadline;
     uint256 public totalRaised;
     bool public withdrawn;
+    bool public cancelled;
+    event Cancelled(address indexed creator);
     mapping(address => uint256) public contributions;
 
     event Contributed(address indexed contributor, uint256 amount);
@@ -22,6 +24,7 @@ contract Crowdfund {
     }
 
     function contribute() external payable {
+        require(!cancelled, "Campaign cancelled");
         require(block.timestamp < deadline, "Campaign ended");
         require(msg.value > 0, "Amount must be positive");
         contributions[msg.sender] += msg.value;
@@ -30,6 +33,7 @@ contract Crowdfund {
     }
 
     function withdraw() external {
+        require(!cancelled, "Campaign cancelled");
         require(msg.sender == beneficiary, "Only beneficiary");
         require(block.timestamp >= deadline && totalRaised >= goal, "Goal not settled");
         require(!withdrawn, "Already withdrawn");
@@ -40,8 +44,15 @@ contract Crowdfund {
         emit Withdrawn(msg.sender, amount);
     }
 
+    function cancel() external {
+        require(msg.sender == beneficiary, "Only beneficiary");
+        require(!cancelled && block.timestamp < deadline, "Cancellation unavailable");
+        cancelled = true;
+        emit Cancelled(msg.sender);
+    }
+
     function refund() external {
-        require(block.timestamp >= deadline && totalRaised < goal, "Refund unavailable");
+        require(cancelled || (block.timestamp >= deadline && totalRaised < goal), "Refund unavailable");
         uint256 amount = contributions[msg.sender];
         require(amount > 0, "Nothing to refund");
         contributions[msg.sender] = 0;

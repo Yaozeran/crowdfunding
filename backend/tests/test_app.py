@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
-from server.src.app import create_app
+from backend.src.app import create_app
 
 CONTRACT = '0x' + 'a' * 40
 WALLET = '0x' + 'b' * 40

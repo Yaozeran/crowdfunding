@@ -1,20 +1,72 @@
-# Common Ground crowdfunding
+# Common Ground — Decentralized Crowdfunding Platform
 
-A single-campaign Ethereum DApp for the assignment in `doc/assignment.docx`. The Next.js interface connects MetaMask, reads live campaign state, submits ETH contributions, and displays transaction status/history. Flask verifies submitted transaction hashes against its RPC provider and stores the resulting public blockchain records in SQLite.
+## Task 2: multi-campaign platform
+
+The current home page is a multi-campaign ETH crowdfunding platform. Visitors can browse, search by title/category, filter by status, and sort by deadline, amount raised, or creation date. Wallet holders can create campaigns, contribute, manage descriptive metadata, cancel active campaigns, withdraw eligible funds, and claim refunds. Creators can also back other campaigns.
+
+### Run the current platform
+
+Use the installation and local/Docker service commands below. Configure the same `CHAIN_ID` in the frontend and backend, a reachable backend `RPC_URL`, and the browser's exact origin in `WEB_ORIGIN`. **A predeployed `CONTRACT_ADDRESS` is no longer required for the home page**; that setting supports the legacy transaction API only. The browser deploys each campaign through the connected wallet and registers its deployment hash with the API. Use a dedicated SQLite database per configured chain; changing networks requires changing the database path as well.
+
+1. Start the local chain with `cd frontend && npm run chain`, or use Sepolia RPC and test ETH.
+2. Start the backend and frontend using the service commands below. For local development use chain ID `1337`; for Sepolia use `11155111`.
+3. Click **Connect & sign in**. The app requests a [Sign-In with Ethereum](https://eips.ethereum.org/EIPS/eip-4361) signature containing the configured domain, URI, chain, one-use nonce, and five-minute expiry. Sessions last one hour; disconnect revokes the server session. Account/network changes clear local authentication. This MVP supports EOA signatures through injected EIP-1193 wallets (MetaMask and compatible wallets); contract-wallet SIWE verification is not implemented.
+4. Select **Create campaign**, enter title, description, category, an HTTPS image URL, positive ETH target, and a future deadline. Approve deployment in the wallet. If registration fails after deployment, **Retry registration** reuses the hash during the current page session. After a reload, an existing deployment can be registered via the API with its transaction hash and metadata; avoid deploying again unnecessarily.
+5. Open a campaign, estimate contribution gas, then contribute ETH. The wallet displays the final fee before confirmation. Pending hashes persist in browser storage and are retried every 12 seconds. Campaign events are indexed in batches of 2,000 blocks when refreshed and every 30 seconds while the website is open, including transactions submitted directly outside the website. History is limited to the latest 100 records. No background worker runs when the website is closed; call the sync API repeatedly to catch up.
+6. Contributions remain open until the deadline even if the goal is met. After the deadline, only the creator can withdraw if the target was met; otherwise backers can refund once. Creators can cancel before the deadline, immediately enabling refunds and blocking further contributions/withdrawal. The new contract must be deployed for cancellation support; old contracts are not upgraded automatically.
+
+No wallet private keys or seed phrases are stored. ETH is the supported MVP currency; ERC-20 support is outside this implementation. State and history can be stale while RPC access is unavailable or indexing is catching up. Blockchain timestamps determine settlement eligibility.
+
+### Administration
+
+Set `ADMIN_WALLETS` to comma-separated administrator wallet addresses in the backend environment (root `.env` for Compose). Restart the backend after changing the allowlist. Sign in with an allowlisted wallet and open **Administration** to flag, hide/restore listings, edit inappropriate descriptive content/images, and pause/resume campaign registration. Hiding does not delete blockchain data or prevent direct contract interaction. Hidden campaigns remain available to administrators; creators need administrator review to edit hidden listings. Admin privileges come only from the server allowlist, never from client-provided role fields.
+
+### Platform API
+
+Authenticated endpoints accept `Authorization: Bearer <token>`; tokens are held in page memory, expire after one hour, and are stored as hashes server-side.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /api/auth/challenge` | `{wallet}` → server-issued nonce and exact SIWE message |
+| `POST /api/auth/verify` | `{nonce, signature}` → session token and role |
+| `POST /api/auth/logout` | Revoke the current session |
+| `GET /api/campaigns?q=&status=&sort=` | Public visible campaign catalog |
+| `POST /api/campaigns` | Signed-in creator registers `{deployment_hash,title,description,category,image}`; API verifies supported creation bytecode, deployer, beneficiary, positive goal and future deadline |
+| `PATCH /api/campaigns/<address>` | Creator/admin edits all four descriptive fields |
+| `POST /api/campaigns/<address>/sync` | Index events and refresh chain state; repeat until `indexed_block == latest_block` |
+| `GET /api/transactions?campaign=<address>&wallet=<optional address>` | Campaign history, optionally filtered by wallet |
+| `POST /api/transactions` | `{hash,campaign}` verifies and records pending/confirmed/failed transactions |
+| `GET /api/admin/campaigns` | Admin catalog including hidden listings |
+| `PATCH /api/admin/campaigns/<address>` | Admin sets boolean `{hidden,flagged}` |
+| `GET /api/settings` | Read campaign-registration pause setting |
+| `PATCH /api/settings` | Admin sets boolean `{creation_paused}` |
+
+Run `npm run contract:compile` from `frontend/` after contract changes: it regenerates and synchronizes the tracked frontend and backend ABI/creation-bytecode artifacts. Keep those artifacts in sync before building either service.
+
+The sections below retain the original single-campaign deployment walkthrough and project infrastructure reference. Their static community story, global contract address, and manual predeployment steps describe the earlier UI. For the current UI, use **Create campaign** and the per-campaign workflow above.
+
+
+The original single-campaign Ethereum DApp for the assignment in `doc/assignment.docx`. The Next.js interface connects MetaMask, reads live campaign state, submits ETH contributions, and displays transaction status/history. Flask verifies submitted transaction hashes against its RPC provider and stores the resulting public blockchain records in SQLite.
 
 ## Project layout
 
 ```text
-web/                       Next.js / React / TypeScript frontend
-  src/app/                 Campaign interface and responsive styles
+frontend/                       Next.js / React / TypeScript frontend
+  src/app/                 Page composition and responsive styles
+  src/components/          Campaign story, funding panel, transaction history
+  src/hooks/               Wallet and campaign state management
   src/lib/                 Contract ABI, wallet connection, amount validation
   scripts/                 Solidity compilation and local deployment
   tests/                   Wallet, validation, and contract tests
 sol/                       Solidity contracts
   Crowdfund.sol            All-or-nothing crowdfunding contract
   artifacts/               Generated ABI and bytecode (gitignored)
-server/
-  src/app.py               Flask API and SQLite persistence
+backend/
+  src/app.py               Flask application factory
+  src/config.py            Environment configuration
+  src/database.py          SQLite connections and schema
+  src/blockchain.py        On-chain transaction verification
+  src/routes.py            Health and transaction endpoints
   tests/                   API validation and persistence tests
   .env.example             Backend configuration template
 ```
@@ -35,9 +87,9 @@ All signing happens in MetaMask. Neither server nor frontend needs a private key
 Use Node.js 22.13+ (or a compatible newer LTS), npm, Python 3.11+, and MetaMask.
 
 ```bash
-cd web
+cd frontend
 npm ci
-cd ../server
+cd ../backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
@@ -58,9 +110,9 @@ Open **http://localhost:3000**. The Flask API is available at **http://localhost
 
 Without a configured contract address, the web and API can start, but the UI shows setup instructions and contributions are unavailable. Docker starts the application services; it does not deploy the Solidity contract. Use the local-chain or Sepolia deployment instructions below, then put the deployed address into the root `.env`.
 
-Compose reads **root `.env`**, not `web/.env.local` or `server/.env`. Build contexts exclude local environment files and databases. The root template targets Sepolia; replace its RPC placeholder with your HTTPS Sepolia RPC endpoint. For a local chain instead, set `CHAIN_ID=1337` and `RPC_URL=http://host.docker.internal:8545`. On Docker Desktop, use `host.docker.internal` to reach that RPC. On Linux, the host RPC must listen on an address reachable from the Docker bridge; loopback-only host listeners are not reachable. Alternatively, point `RPC_URL` to an external provider. For Sepolia, set `CHAIN_ID=11155111` and its RPC endpoint.
+Compose reads **root `.env`**, not `frontend/.env.local` or `backend/.env`. Build contexts exclude local environment files and databases. The root template targets Sepolia; replace its RPC placeholder with your HTTPS Sepolia RPC endpoint. For a local chain instead, set `CHAIN_ID=1337` and `RPC_URL=http://host.docker.internal:8545`. On Docker Desktop, use `host.docker.internal` to reach that RPC. On Linux, the host RPC must listen on an address reachable from the Docker bridge; loopback-only host listeners are not reachable. Alternatively, point `RPC_URL` to an external provider. For Sepolia, set `CHAIN_ID=11155111` and its RPC endpoint.
 
-`API_PUBLIC_URL` must be reachable by the **browser**, so use `http://localhost:5001` for local Docker deployment, not the Compose service name `server`. If you change ports, update `WEB_ORIGIN` and `API_PUBLIC_URL` to match. Public frontend settings are embedded at build time; rerun `docker compose up --build -d --wait` after changing the contract, chain, or API URL. RPC provider credentials remain in the backend environment.
+`API_PUBLIC_URL` must be reachable by the **browser**, so use `http://localhost:5001` for local Docker deployment, not the Compose service name `backend`. If you change ports, update `WEB_ORIGIN` and `API_PUBLIC_URL` to match. Public frontend settings are embedded at build time; rerun `docker compose up --build -d --wait` after changing the contract, chain, or API URL. RPC provider credentials remain in the backend environment.
 
 ```bash
 docker compose ps
@@ -76,7 +128,7 @@ The root `render.yaml` defines two Docker web services: a free-plan Next.js fron
 
 ### Blueprint deployment
 
-1. Push the repository, including `render.yaml`, both Dockerfiles, and `web/package-lock.json`, to a Git provider supported by Render. Do not commit `.env` files, RPC credentials, or private keys.
+1. Push the repository, including `render.yaml`, both Dockerfiles, and `frontend/package-lock.json`, to a Git provider supported by Render. Do not commit `.env` files, RPC credentials, or private keys.
 2. In the Render dashboard, select **New → Blueprint**, connect the repository, and select `render.yaml`.
 3. Supply the prompted environment values:
 
@@ -105,8 +157,8 @@ If you prefer **New → Web Service**, use Docker for both services and leave Ro
 
 | Setting | Backend | Frontend |
 | --- | --- | --- |
-| Dockerfile path | `./server/Dockerfile` | `./web/Dockerfile` |
-| Docker build context | `./server` | `./web` |
+| Dockerfile path | `./backend/Dockerfile` | `./frontend/Dockerfile` |
+| Docker build context | `./backend` | `./frontend` |
 | Docker command | Leave blank (uses Dockerfile CMD) | Leave blank |
 | Health check path | `/api/health` | `/` |
 | `PORT` | `5001` | `3000` |
@@ -123,7 +175,7 @@ References: [Blueprint specification](https://render.com/docs/blueprint-spec), [
 1. Start a local blockchain in one terminal:
 
    ```bash
-   cd web
+   cd frontend
    npm run chain
    ```
 
@@ -132,13 +184,13 @@ References: [Blueprint specification](https://render.com/docs/blueprint-spec), [
 2. In another terminal, deploy the campaign:
 
    ```bash
-   cd web
+   cd frontend
    npm run contract:deploy:local
    ```
 
-   The script compiles and deploys a campaign with a **1 ETH goal** and **one-hour duration**, with the first local account as beneficiary. Copy the printed contract address. The chain is ephemeral; restarting it requires redeployment. To change the local goal or duration, edit `web/scripts/deploy-local.mjs` before deploying.
+   The script compiles and deploys a campaign with a **1 ETH goal** and **one-hour duration**, with the first local account as beneficiary. Copy the printed contract address. The chain is ephemeral; restarting it requires redeployment. To change the local goal or duration, edit `frontend/scripts/deploy-local.mjs` before deploying.
 
-3. Copy `server/.env.example` to `server/.env` and set:
+3. Copy `backend/.env.example` to `backend/.env` and set:
 
    ```dotenv
    RPC_URL=http://127.0.0.1:8545
@@ -147,7 +199,7 @@ References: [Blueprint specification](https://render.com/docs/blueprint-spec), [
    WEB_ORIGIN=http://localhost:3000
    ```
 
-   Start Flask from `server/`:
+   Start Flask from `backend/`:
 
    ```bash
    source .venv/bin/activate
@@ -157,9 +209,9 @@ References: [Blueprint specification](https://render.com/docs/blueprint-spec), [
    flask --app src.app:create_app run --host 127.0.0.1 --port 5001
    ```
 
-   SQLite is created automatically at `server/transactions.sqlite3`. Set `DATABASE` to change its path.
+   SQLite is created automatically at `backend/transactions.sqlite3`. Set `DATABASE` to change its path.
 
-4. Copy `web/.env.example` to `web/.env.local` and set:
+4. Copy `frontend/.env.example` to `frontend/.env.local` and set:
 
    ```dotenv
    NEXT_PUBLIC_CONTRACT_ADDRESS=<same deployed address>
@@ -167,7 +219,7 @@ References: [Blueprint specification](https://render.com/docs/blueprint-spec), [
    NEXT_PUBLIC_API_URL=http://localhost:5001
    ```
 
-   Start the frontend from `web/`:
+   Start the frontend from `frontend/`:
 
    ```bash
    npm run dev
@@ -250,7 +302,7 @@ These are separate campaigns: a campaign that met its goal cannot also demonstra
 - A history-service error does not mean the contribution failed. Check the explorer receipt and fix the server's RPC configuration before sending another contribution.
 - Save screenshots of the deployed contract, MetaMask confirmation, funded campaign/history, and withdrawal/refund receipts for the assignment.
 
-For running outside Docker, use the same address and Sepolia chain ID in `server/.env` and `web/.env.local` as described above.
+For running outside Docker, use the same address and Sepolia chain ID in `backend/.env` and `frontend/.env.local` as described above.
 
 ## API
 
@@ -268,9 +320,9 @@ Transactions are indexed by submitted hash, not by scanning the full blockchain.
 
 ```bash
 # From repository root
-server/.venv/bin/python -m pytest server/tests -q
+backend/.venv/bin/python -m pytest backend/tests -q
 
-# From web/
+# From frontend/
 npm test
 npm run lint
 npm run build

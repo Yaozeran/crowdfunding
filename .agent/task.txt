@@ -8,3 +8,75 @@ based on the doc, make a simple crowdfunding web app with following features
 as mentioned in the doc requirements, etc.
 
 fit the content in the server and web dir structure
+
+
+---
+Task 2
+
+With the following requirements, improve the current proj:
+
+1. Project overview
+Project name: Decentralized Crowdfunding Platform
+Objective: Develop a decentralized application that allows users to create fundraising campaigns, contribute cryptocurrency, track funding progress, and withdraw or refund funds according to transparent smart-contract rules.
+User roles
+Role	Responsibilities
+Visitor	Browse and search crowdfunding campaigns
+Backer	Connect wallet, contribute funds, claim refunds
+Campaign Creator	Create campaigns, manage campaign details, withdraw eligible funds
+Administrator	Moderate campaign listings and manage platform settings
+A user can be both a campaign creator and a backer. Wallet addresses serve as blockchain identities.
+2. Functional requirements (FR)
+FR-01: Wallet authentication
+Wallet connection and authentication
+
+- Connect or disconnect MetaMask or other compatible wallets.
+- Display the connected wallet address and network.
+- Support wallet-based authentication using Sign-In with Ethereum (SIWE).
+- Detect incorrect blockchain networks.
+- Do not store wallet private keys or seed phrases.
+
+FR-02: Campaign creation
+Campaign creators should be able to:
+- Create a fundraising campaign with title, description, category, image, funding target, and deadline.
+- Deploy or register the campaign on-chain through a smart contract.
+- View campaign status and contribution history.
+- Edit off-chain descriptive information subject to platform rules.
+- Cancel campaigns when permitted by the contract.
+Validation: Funding targets must be positive, deadlines must be in the future, and required metadata must be present.
+FR-03: Campaign discovery
+Visitors and backers should be able to:
+- Browse active, successful, and failed campaigns.
+- Search campaigns by title or category.
+- Sort by deadline, amount raised, or creation date.
+- View campaign details, creator address, funding progress, and transaction history.
+FR-04: Cryptocurrency contributions
+Backers should be able to:
+- Contribute ETH or a supported ERC-20 token.
+- View estimated transaction fees.
+- Confirm contributions using their wallets.
+- Track pending, confirmed, and failed transactions.
+- View their contribution history.
+The smart contract must record valid contributions and emit events for the backend to index.
+FR-05: Fund management
+Implement an all-or-nothing crowdfunding model for the MVP.
+Condition	Expected behavior
+Campaign active	Accept valid contributions
+Target reached before deadline	Continue accepting contributions until deadline, if configured
+Deadline reached and target met	Allow creator to withdraw funds
+Deadline reached and target not met	Allow backers to claim refunds
+Campaign cancelled	Allow refunds under defined cancellation rules
+The contract must prevent unauthorized withdrawals and double refunds.
+FR-06: Transaction history
+The platform should display:
+- Contribution amount and timestamp.
+- Transaction hash and blockchain explorer link.
+- Wallet addresses involved.
+- Withdrawal and refund records.
+- Transaction confirmation status.
+FR-07: Campaign administration
+Administrators can:
+- Flag suspicious campaigns.
+- Hide campaigns from the platform's frontend.
+- Moderate inappropriate descriptions or images.
+- Manage platform configuration.
+Important: Removing a campaign from the website does not delete its blockchain data or automatically prevent interaction with its smart contract.

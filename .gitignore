@@ -17,5 +17,5 @@ __pycache__/
 *.sqlite3
 *.sqlite3-*
 sol/artifacts/
-web/test-results/
-web/playwright-report/
+frontend/test-results/
+frontend/playwright-report/

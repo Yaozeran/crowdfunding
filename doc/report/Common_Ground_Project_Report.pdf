@@ -1,0 +1,483 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 7 /Kids [6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Length 3171 >>
+stream
+0.12 0.21 0.28 rg
+BT /F2 17 Tf 48 793 Td
+(Common Ground Crowdfunding) Tj ET
+0.16 0.16 0.16 rg
+BT /F1 10 Tf 48 764 Td 10.5 TL
+(Financial Decentralized Application - Project Report) Tj T*
+(Prepared from the project source on 13 October 2026) Tj T*
+() Tj T*
+(1. Introduction) Tj T*
+(Common Ground is a single-campaign Ethereum crowdfunding application. Its demonstration) Tj T*
+(campaign, "The neighborhood learning room", presents a community space for reading, learning) Tj T*
+(and sharing ideas. Contributors connect MetaMask and send test ETH to a Solidity contract. The) Tj T*
+(contract holds funds until the campaign deadline and then permits either beneficiary) Tj T*
+(withdrawal or individual refunds, depending on whether the funding goal was reached.) Tj T*
+() Tj T*
+(A decentralized application combines a conventional web interface with blockchain execution.) Tj T*
+(Ethereum records transactions and runs the campaign rules; the browser provides a usable) Tj T*
+(interface; Flask and SQLite maintain a convenient transaction-history index. The backend does) Tj T*
+(not hold campaign funds or sign wallet transactions. This division makes the contract the) Tj T*
+(authority for financial settlement while preserving familiar web application features.) Tj T*
+() Tj T*
+(2. Problem Statement) Tj T*
+(Community fundraising requires contributors to trust that an organizer will apply the) Tj T*
+(advertised funding conditions. If a campaign raises too little to proceed, returning) Tj T*
+(contributions can require manual administration. Contributors also need clear evidence that) Tj T*
+(their payments were recorded.) Tj T*
+() Tj T*
+(This project addresses those concerns through an all-or-nothing funding rule enforced on-) Tj T*
+(chain. Once deployed, the beneficiary, goal and deadline cannot be changed. Successful) Tj T*
+(campaigns release funds only after the deadline; unsuccessful campaigns allow contributors to) Tj T*
+(reclaim their recorded ETH. This guarantee concerns settlement conditions, rather than how the) Tj T*
+(beneficiary spends funds after withdrawal. Gas fees remain the responsibility of each) Tj T*
+(transaction sender.) Tj T*
+() Tj T*
+(3. Objectives) Tj T*
+(- Implement an Ethereum contract for contributions, withdrawal and refunds.) Tj T*
+(- Integrate MetaMask without collecting private keys or seed phrases.) Tj T*
+(- Present live funding progress, campaign status and wallet contributions.) Tj T*
+(- Verify transaction hashes independently before recording history.) Tj T*
+(- Validate inputs and communicate wallet, network and service errors.) Tj T*
+(- Provide automated test sources and repeatable deployment instructions.) Tj T*
+() Tj T*
+(Scope and evidence) Tj T*
+(This report describes the checked-in implementation and test sources. Automated tests were not) Tj T*
+(executed for this report. Live Sepolia deployment, browser interactions, screenshots and) Tj T*
+(performance measurements were not independently verified. The project is an educational) Tj T*
+(demonstration using test ETH.) Tj T*
+ET
+0.4 0.4 0.4 rg
+BT /F1 9 Tf 48 30 Td
+(Common Ground | Project Report | 13 October 2026) Tj ET
+BT /F1 9 Tf 520 30 Td (1 / 7) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 3146 >>
+stream
+0.12 0.21 0.28 rg
+BT /F2 17 Tf 48 793 Td
+(System Architecture and Technologies) Tj ET
+0.16 0.16 0.16 rg
+BT /F1 10 Tf 48 764 Td 10.5 TL
+(4. System Architecture) Tj T*
+(The application has four cooperating layers:) Tj T*
+() Tj T*
+(Browser UI -> MetaMask -> Ethereum RPC -> Crowdfund contract) Tj T*
+(Browser UI -> Flask API -> independent Ethereum RPC verification) Tj T*
+(Flask API -> SQLite transaction-history database) Tj T*
+() Tj T*
+(The frontend reads campaign state through the wallet provider and requests a signature when a) Tj T*
+(user contributes, withdraws or claims a refund. Ethereum executes the transaction. The browser) Tj T*
+(then submits the transaction hash to Flask. Flask uses its own configured RPC provider to) Tj T*
+(obtain authoritative transaction and receipt data, and stores the result in SQLite.) Tj T*
+() Tj T*
+(The separation matters because a database write cannot establish that ETH changed hands.) Tj T*
+(Blockchain state determines the financial outcome. Conversely, a confirmed blockchain) Tj T*
+(transaction remains valid even when the history service is unavailable. The interface retains) Tj T*
+(unresolved hashes and retries indexing while the wallet is connected.) Tj T*
+() Tj T*
+(The frontend and backend must use the same chain ID and deployed contract address. Local) Tj T*
+(development uses chain ID 1337; the documented public-testnet workflow uses Sepolia, chain ID) Tj T*
+(11155111. Wallet account and network changes reset the frontend session and require) Tj T*
+(reconnection. Session checks reduce the chance of displaying asynchronous results for an) Tj T*
+(outdated account.) Tj T*
+() Tj T*
+(5. Technologies Used) Tj T*
+(- Next.js 16.3.7 and React 19.2.8: page composition and interactive UI.) Tj T*
+(- TypeScript: typed campaign, wallet and transaction representations.) Tj T*
+(- ethers.js 6: wallet provider, contract calls and exact ETH/wei conversion.) Tj T*
+(- Solidity: immutable campaign rules and ETH custody.) Tj T*
+(- Flask 3.1.2 and Web3.py 7.13.0: API and RPC verification.) Tj T*
+(- SQLite: lightweight persistence of public transaction metadata.) Tj T*
+(- Ganache: local blockchain development and contract test execution.) Tj T*
+(- Docker Compose: coordinated frontend/backend deployment.) Tj T*
+(- Gunicorn: production backend serving in the container configuration.) Tj T*
+() Tj T*
+(Versions above reflect package declarations, rather than an independently inspected running) Tj T*
+(deployment. The contract compiler script enables optimization with 200 runs and targets the) Tj T*
+(Shanghai EVM. The Solidity source declares pragma ^0.8.30.) Tj T*
+() Tj T*
+(Technology rationale) Tj T*
+(The stack separates presentation, verification and settlement into small components. SQLite is) Tj T*
+(appropriate for a modest single-instance educational service. MetaMask provides user-) Tj T*
+(controlled signing, while Solidity makes the campaign conditions inspectable and executable) Tj T*
+(without relying on the Flask server to release funds.) Tj T*
+ET
+0.4 0.4 0.4 rg
+BT /F1 9 Tf 48 30 Td
+(Common Ground | Project Report | 13 October 2026) Tj ET
+BT /F1 9 Tf 520 30 Td (2 / 7) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Length 3404 >>
+stream
+0.12 0.21 0.28 rg
+BT /F2 17 Tf 48 793 Td
+(Smart Contract Design) Tj ET
+0.16 0.16 0.16 rg
+BT /F1 10 Tf 48 764 Td 10.5 TL
+(6. Smart Contract Design) Tj T*
+(The implementation is sol/Crowdfund.sol. Its constructor accepts a beneficiary address, target) Tj T*
+(in wei and duration in seconds. It rejects a zero beneficiary, zero goal or zero duration. The) Tj T*
+(deadline is calculated from the deployment block timestamp. Beneficiary, goal and deadline are) Tj T*
+(immutable.) Tj T*
+() Tj T*
+(State includes totalRaised, withdrawn and a contributions mapping keyed by wallet address.) Tj T*
+(totalRaised represents cumulative historical contributions, rather than the remaining ETH) Tj T*
+(balance. It is deliberately not reduced after settlement. A wallet's contribution is reset to) Tj T*
+(zero when its refund succeeds.) Tj T*
+() Tj T*
+(Contribution) Tj T*
+(contribute\(\) is payable. It accepts positive ETH only when block.timestamp is strictly before) Tj T*
+(the deadline. It increases the sender's contribution and totalRaised, then emits Contributed.) Tj T*
+(Overfunding is allowed; reaching the goal early does not end the campaign or unlock early) Tj T*
+(withdrawal.) Tj T*
+() Tj T*
+(Successful settlement) Tj T*
+(withdraw\(\) requires the caller to be the beneficiary, the deadline to have passed, totalRaised) Tj T*
+(to meet the goal and withdrawn to be false. It marks the campaign withdrawn before) Tj T*
+(transferring the entire contract balance to the beneficiary. A failed transfer reverts the) Tj T*
+(transaction, including the state update. Withdrawn records the recipient and amount.) Tj T*
+() Tj T*
+(Unsuccessful settlement) Tj T*
+(refund\(\) requires the deadline to have passed and totalRaised to remain below the goal. The) Tj T*
+(caller must have a positive recorded contribution. The function clears that contribution) Tj T*
+(before transferring its value back and emits Refunded. Contributors claim individually; the) Tj T*
+(contract does not loop over all donors. A second successful refund from the same contribution) Tj T*
+(is prevented.) Tj T*
+() Tj T*
+(Security and gas considerations) Tj T*
+(Authorization depends on msg.sender, not a frontend-supplied identity. Outgoing transfers) Tj T*
+(follow checks-effects-interactions: settlement eligibility is checked and state updated before) Tj T*
+(external calls. These choices address repeat settlement and basic reentrancy concerns, but do) Tj T*
+(not constitute a comprehensive audit. Ordinary direct ETH transfers without a supported) Tj T*
+(payable function are rejected because no receive or fallback handler is defined.) Tj T*
+() Tj T*
+(Immutable campaign parameters reduce administrative discretion. Per-wallet refunds avoid a) Tj T*
+(settlement loop whose gas cost grows with donor count. Compiler optimization is enabled, but) Tj T*
+(gas savings were not measured. ETH amounts use integer wei, avoiding floating-point accounting) Tj T*
+(errors. The application never promises that network fees are refundable.) Tj T*
+() Tj T*
+(State transitions) Tj T*
+(Active -> deadline reached -> goal met -> beneficiary withdraws once.) Tj T*
+(Active -> deadline reached -> goal missed -> each donor claims a refund.) Tj T*
+(No contract path changes the campaign goal or extends the deadline.) Tj T*
+ET
+0.4 0.4 0.4 rg
+BT /F1 9 Tf 48 30 Td
+(Common Ground | Project Report | 13 October 2026) Tj ET
+BT /F1 9 Tf 520 30 Td (3 / 7) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 9 0 R >>
+endobj
+11 0 obj
+<< /Length 3452 >>
+stream
+0.12 0.21 0.28 rg
+BT /F2 17 Tf 48 793 Td
+(Application Design and Implementation) Tj ET
+0.16 0.16 0.16 rg
+BT /F1 10 Tf 48 764 Td 10.5 TL
+(7. Application Design) Tj T*
+(The interface combines a campaign story, funding panel and transaction history. The story) Tj T*
+(explains the community purpose and settlement promise. The funding panel shows ETH raised,) Tj T*
+(goal, percentage funded, deadline and the connected wallet's contribution. It supports manual) Tj T*
+(amounts and preset contributions of 0.01, 0.05 and 0.1 ETH.) Tj T*
+() Tj T*
+(Buttons reflect the campaign state. Contributions close after the deadline. Refunds appear for) Tj T*
+(eligible contributors when the goal was missed. Withdrawal appears for the beneficiary after a) Tj T*
+(successful campaign ends. These controls help users choose valid actions, while the contract) Tj T*
+(remains responsible for enforcing permissions.) Tj T*
+() Tj T*
+(8. Implementation) Tj T*
+(frontend/src/hooks/use-campaign.ts coordinates wallet connection, contract reads, transaction) Tj T*
+(submission and history reconciliation. It reads beneficiary, goal, total raised, deadline,) Tj T*
+(withdrawn status, the user's contribution and the latest block. Settlement availability is) Tj T*
+(based on blockchain time. A 12-second refresh interval updates campaign and history data while) Tj T*
+(connected.) Tj T*
+() Tj T*
+(Before submission, the frontend checks the configured network, selected signer and presence of) Tj T*
+(contract code at the address. contributionWei\(\) accepts a positive decimal ETH amount with at) Tj T*
+(most 18 decimal places and converts it to bigint wei through ethers. Invalid, zero, negative) Tj T*
+(and over-precision amounts are rejected. Wallet rejection receives an actionable message.) Tj T*
+() Tj T*
+(After broadcasting, the UI exposes the transaction hash, attempts history indexing and waits) Tj T*
+(for one block confirmation with a 120-second timeout. An error after broadcast prompts the) Tj T*
+(user to check the hash before retrying. This distinction helps prevent duplicate contributions) Tj T*
+(caused by confusing an indexing failure with a payment failure.) Tj T*
+() Tj T*
+(Backend verification) Tj T*
+(POST /api/transactions accepts a syntactically valid transaction hash. Flask checks the RPC) Tj T*
+(chain ID, recipient contract and exact four-byte selector for contribute\(\), refund\(\) or) Tj T*
+(withdraw\(\). Sender, ETH value and receipt status come from RPC, rather than client claims.) Tj T*
+(Unknown transactions return 404, invalid or unrelated requests return 400, and) Tj T*
+(configuration/provider failures return 503.) Tj T*
+() Tj T*
+(GET /api/transactions?wallet=... returns up to 100 indexed records for the wallet, configured) Tj T*
+(chain and contract. GET /api/health reports service liveness. CORS allows the configured web) Tj T*
+(origin; incoming request bodies are limited to 2,048 bytes.) Tj T*
+() Tj T*
+(SQLite stores hash, chain ID, contract address, wallet, action, transaction value in wei,) Tj T*
+(status, block number and creation timestamp. The primary key is \(chain_id, hash\), enabling) Tj T*
+(idempotent status updates. Transaction value is stored as text; for withdrawal/refund calls,) Tj T*
+(this is the call's attached ETH value, not the contract's outgoing settlement amount.) Tj T*
+ET
+0.4 0.4 0.4 rg
+BT /F1 9 Tf 48 30 Td
+(Common Ground | Project Report | 13 October 2026) Tj ET
+BT /F1 9 Tf 520 30 Td (4 / 7) Tj ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 11 0 R >>
+endobj
+13 0 obj
+<< /Length 3491 >>
+stream
+0.12 0.21 0.28 rg
+BT /F2 17 Tf 48 793 Td
+(Deployment, Testing and Results) Tj ET
+0.16 0.16 0.16 rg
+BT /F1 10 Tf 48 764 Td 10.5 TL
+(Deployment implementation) Tj T*
+(Docker Compose builds two services, exposes the frontend on localhost:3000 and the backend on) Tj T*
+(localhost:5001, and stores SQLite in a named volume. Health checks support startup) Tj T*
+(coordination. Application liveness does not establish blockchain connectivity. Docker starts) Tj T*
+(the web services; contract deployment remains a separate operation.) Tj T*
+() Tj T*
+(The local deployment script creates a campaign with a 1 ETH goal and a one-hour duration. The) Tj T*
+(README also describes Remix and MetaMask deployment to Sepolia, including a 0.002 ETH example) Tj T*
+(goal. Public frontend settings are embedded at build time, so changes to address, chain or API) Tj T*
+(URL require rebuilding the frontend.) Tj T*
+() Tj T*
+(A Render Blueprint defines a Docker frontend and a backend with persistent SQLite storage.) Tj T*
+(This is deployment configuration, rather than evidence that hosted services are live. RPC) Tj T*
+(credentials belong in backend environment settings. Wallet private keys are unnecessary for) Tj T*
+(running either application service.) Tj T*
+() Tj T*
+(9. Testing and Results) Tj T*
+(The repository contains automated tests at three levels:) Tj T*
+(- Frontend unit tests: precise ETH parsing, invalid amounts, wallet rejection, missing) Tj T*
+(wallets, requested network switching and failed network switching.) Tj T*
+(- Contract tests: constructor validation, positive contributions, zero-value rejection,) Tj T*
+(premature settlement rejection, beneficiary-only withdrawal, deadline enforcement and) Tj T*
+(prevention of repeat withdrawals/refunds.) Tj T*
+(- Backend tests: authoritative RPC data, database persistence, malformed requests,) Tj T*
+(pending/confirmed/failed status transitions, unrelated contract/method rejection, RPC/network) Tj T*
+(errors, CORS and configuration checks.) Tj T*
+() Tj T*
+(Contract tests use an in-process Ganache EVM. Backend tests use temporary SQLite databases and) Tj T*
+(mocked RPC responses. These approaches isolate financial rules and API behavior without) Tj T*
+(requiring a deployed Sepolia contract.) Tj T*
+() Tj T*
+(Results and evidence boundaries) Tj T*
+(Source review confirms that the implementation and these test scenarios exist. No fresh) Tj T*
+(pass/fail counts are claimed: test suites, lint and build were not run during preparation of) Tj T*
+(this report. The README records an earlier successful production frontend build during Docker) Tj T*
+(deployment; this is repository documentation, not a newly reproduced result. Browser/MetaMask) Tj T*
+(interaction and Sepolia deployment remain unverified here.) Tj T*
+() Tj T*
+(Manual acceptance evidence still needed) Tj T*
+(Capture wallet connection, an approved contribution, explorer receipt and history entry. Use) Tj T*
+(separate campaigns to demonstrate successful withdrawal and failed-goal refund. Confirm) Tj T*
+(unauthorized settlement and repeated claims fail. Restart the backend to check persistence,) Tj T*
+(and interrupt history service during a payment to check recovery without a second payment.) Tj T*
+(Record desktop/mobile views and invalid-input behavior. No screenshots are fabricated or) Tj T*
+(included as observed results.) Tj T*
+ET
+0.4 0.4 0.4 rg
+BT /F1 9 Tf 48 30 Td
+(Common Ground | Project Report | 13 October 2026) Tj ET
+BT /F1 9 Tf 520 30 Td (5 / 7) Tj ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 13 0 R >>
+endobj
+15 0 obj
+<< /Length 3636 >>
+stream
+0.12 0.21 0.28 rg
+BT /F2 17 Tf 48 793 Td
+(Evaluation, Challenges and Limitations) Tj ET
+0.16 0.16 0.16 rg
+BT /F1 10 Tf 48 764 Td 10.5 TL
+(10. Challenges Encountered) Tj T*
+(The code reveals several integration challenges and the strategies used to address them. These) Tj T*
+(observations describe implementation choices; they are not a reconstructed development diary.) Tj T*
+() Tj T*
+(Exact currency handling: JavaScript floating-point arithmetic is unsuitable for wei) Tj T*
+(accounting. The project uses decimal validation and bigint conversion, preserving up to 18 ETH) Tj T*
+(decimal places.) Tj T*
+() Tj T*
+(Wallet and network consistency: users can change accounts or chains during asynchronous) Tj T*
+(requests. Event handlers reset the session, and submission checks confirm the expected signer) Tj T*
+(and network. Users reconnect to reload the campaign.) Tj T*
+() Tj T*
+(Blockchain/API consistency: a transaction can be broadcast before the server RPC sees it, or) Tj T*
+(can succeed while Flask is unavailable. The frontend saves unresolved hashes locally and) Tj T*
+(retries indexing. The backend accepts repeated submissions idempotently and derives status) Tj T*
+(from receipts.) Tj T*
+() Tj T*
+(Deployment consistency: the wallet and server use separate RPC access, and frontend) Tj T*
+(configuration is fixed during the build. Documentation emphasizes matching chain/address) Tj T*
+(settings and rebuilding after public configuration changes. Persistent volumes or disks) Tj T*
+(preserve SQLite history across container replacement.) Tj T*
+() Tj T*
+(11. Limitations) Tj T*
+(Only one configured campaign is presented at a time. The story is a demonstration, and there) Tj T*
+(is no campaign directory, creation interface, organizer verification or milestone-based) Tj T*
+(release. The contract controls funding conditions but cannot verify whether a beneficiary) Tj T*
+(delivers the promised community project.) Tj T*
+() Tj T*
+(History is an index of submitted hashes, not a complete blockchain scan. Transactions made) Tj T*
+(outside the app need explicit indexing. History responses are limited to 100 rows. Receipt) Tj T*
+(status is refreshed through POST reconciliation, rather than by the GET endpoint itself.) Tj T*
+(Clearing browser storage can remove unresolved hashes unless the user preserves them) Tj T*
+(elsewhere.) Tj T*
+() Tj T*
+(One mined receipt is treated as confirmed, not finalized. Chain reorganizations, replaced) Tj T*
+(transactions and dropped transactions require additional reconciliation. The application has) Tj T*
+(no background indexer, measured load capacity or independently audited contract. No rate-) Tj T*
+(limiting layer is implemented.) Tj T*
+() Tj T*
+(Security, privacy and performance evaluation) Tj T*
+(MetaMask protects signing keys from the application. Public wallet addresses and transaction) Tj T*
+(metadata remain visible; pseudonymous addresses should not be described as anonymous) Tj T*
+(identities. CORS restricts browser origins but is not authentication. The API intentionally) Tj T*
+(permits anyone to index an existing public campaign transaction.) Tj T*
+() Tj T*
+(Twelve-second polling, 10-second backend RPC timeouts and 12-second frontend API timeouts are) Tj T*
+(configuration choices, not measured response-time results. Gas costs, usability outcomes and) Tj T*
+(end-to-end latency have not been benchmarked. SQLite and a single-instance backend suit the) Tj T*
+(current scale but need reassessment for broader deployment.) Tj T*
+ET
+0.4 0.4 0.4 rg
+BT /F1 9 Tf 48 30 Td
+(Common Ground | Project Report | 13 October 2026) Tj ET
+BT /F1 9 Tf 520 30 Td (6 / 7) Tj ET
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 15 0 R >>
+endobj
+17 0 obj
+<< /Length 3777 >>
+stream
+0.12 0.21 0.28 rg
+BT /F2 17 Tf 48 793 Td
+(Future Improvements and Conclusion) Tj ET
+0.16 0.16 0.16 rg
+BT /F1 10 Tf 48 764 Td 10.5 TL
+(12. Future Improvements) Tj T*
+(First, strengthen evidence and operational confidence. Execute the supplied tests and record) Tj T*
+(their outputs, then perform the complete MetaMask/Sepolia walkthrough. Add real screenshots) Tj T*
+(and deployment transaction references to the submission. Measure confirmation latency, API) Tj T*
+(response times and gas costs across contribution, withdrawal and refund scenarios.) Tj T*
+() Tj T*
+(Second, improve reconciliation. A background event indexer could discover transactions) Tj T*
+(independently of browser submissions and update receipt status. Confirmation-depth tracking,) Tj T*
+(reorganization handling and replacement-transaction detection would provide more reliable) Tj T*
+(status semantics. Pagination would remove the 100-record history ceiling.) Tj T*
+() Tj T*
+(Third, expand the product carefully. A campaign factory and directory could support multiple) Tj T*
+(campaigns, with explicit organizer information and configurable campaign narratives. Any) Tj T*
+(milestone release or beneficiary governance feature would require a revised contract design) Tj T*
+(and new financial-rule tests. Independent security review should precede use with real funds.) Tj T*
+() Tj T*
+(Fourth, strengthen hosting and accessibility. Add database backups, API rate limits,) Tj T*
+(monitoring and RPC failure alerts. Evaluate keyboard navigation, screen-reader output, smaller) Tj T*
+(displays and wallet flows with users. Public deployment should use HTTPS and maintain durable) Tj T*
+(storage. Additional automated tests should target failed transfers, adversarial receiver) Tj T*
+(contracts and recovery under network interruption.) Tj T*
+() Tj T*
+(13. Conclusion) Tj T*
+(Common Ground implements the central elements of a financial DApp: a Solidity contract,) Tj T*
+(MetaMask connection, ETH transactions, a web interface, a Flask backend and transaction-) Tj T*
+(history persistence. Its all-or-nothing model makes the settlement conditions explicit and) Tj T*
+(enforces them on Ethereum. Contributors can fund a campaign before its deadline; afterward,) Tj T*
+(successful campaigns allow beneficiary withdrawal and unsuccessful campaigns allow individual) Tj T*
+(refunds.) Tj T*
+() Tj T*
+(The design keeps financial authority on-chain and uses the backend as a verified public-data) Tj T*
+(index. Integer currency handling, immutable campaign parameters and state updates before) Tj T*
+(outgoing transfers provide a sound educational foundation. The main remaining work is) Tj T*
+(demonstrated test execution, live wallet evidence and stronger indexing and operational) Tj T*
+(controls.) Tj T*
+() Tj T*
+(Source basis) Tj T*
+(This report was prepared from doc/assignment.docx, README.md, sol/Crowdfund.sol,) Tj T*
+(frontend/package.json, frontend/src/hooks/use-campaign.ts, frontend/src/lib/,) Tj T*
+(frontend/src/components/, frontend/scripts/compile.mjs, frontend/tests/, backend/src/,) Tj T*
+(backend/tests/test_app.py, compose.yaml and render.yaml. These local sources support the) Tj T*
+(implementation claims; external documentation and live deployment state were not independently) Tj T*
+(verified.) Tj T*
+() Tj T*
+(Submission note) Tj T*
+(The PDF contains seven pages and follows all thirteen report sections requested by the) Tj T*
+(assignment. Student identity details, real execution screenshots and the separate 5-8 minute) Tj T*
+(demonstration video should be supplied by the author. This report does not claim those) Tj T*
+(artifacts already exist.) Tj T*
+ET
+0.4 0.4 0.4 rg
+BT /F1 9 Tf 48 30 Td
+(Common Ground | Project Report | 13 October 2026) Tj ET
+BT /F1 9 Tf 520 30 Td (7 / 7) Tj ET
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 17 0 R >>
+endobj
+xref
+0 19
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000162 00000 n 
+0000000232 00000 n 
+0000000307 00000 n 
+0000003530 00000 n 
+0000003666 00000 n 
+0000006864 00000 n 
+0000007000 00000 n 
+0000010456 00000 n 
+0000010593 00000 n 
+0000014098 00000 n 
+0000014236 00000 n 
+0000017780 00000 n 
+0000017918 00000 n 
+0000021607 00000 n 
+0000021745 00000 n 
+0000025575 00000 n 
+trailer
+<< /Size 19 /Root 1 0 R >>
+startxref
+25713
+%%EOF

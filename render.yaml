@@ -5,8 +5,8 @@ services:
     name: crowdfunding-api
     runtime: docker
     plan: starter
-    dockerfilePath: ./server/Dockerfile
-    dockerContext: ./server
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     healthCheckPath: /api/health
     disk:
       name: transactions
@@ -21,6 +21,8 @@ services:
         value: "11155111"
       - key: CONTRACT_ADDRESS
         sync: false
+      - key: ADMIN_WALLETS
+        sync: false
       - key: RPC_URL
         sync: false
       - key: WEB_ORIGIN
@@ -30,8 +32,8 @@ services:
     name: crowdfunding-web
     runtime: docker
     plan: free
-    dockerfilePath: ./web/Dockerfile
-    dockerContext: ./web
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
     healthCheckPath: /
     envVars:
       - key: PORT
